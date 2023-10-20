@@ -19,4 +19,4 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::get('/translate/{translateTo}/{index}', [AppController::class,'translate']);
+Route::get('/get/{translateTo}/{index}', [AppController::class,'index']);

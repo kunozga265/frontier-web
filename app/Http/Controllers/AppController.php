@@ -3222,16 +3222,21 @@ class AppController extends Controller
     public $info=[];
     public String $body;
 
-    public function translate($translateTo, $index)
+    public function index($translateTo, $index)
     {
+        if(intval($index) < 0 || intval($index) >= count($this->sources)){
+            //index out of range
+            return response()->json(['message'=>'Index out of range']);
+        }elseif (!isset($translateTo)){
+            return response()->json(['message'=>'Translate to language not set']);
+        }
+
         try{
             $source = $this->sources[$index];
             $link = "https://joshuaproject.net/people_groups/".$source["people_id"]."/".$source["region"];
 
             $browser = new HttpBrowser(HttpClient::create());
             $browser->request('GET', $link);
-
-//            dd($browser);
 
             //Name and Country
             $browser->getCrawler()
@@ -3266,17 +3271,16 @@ class AppController extends Controller
             return response()->json(['message'=>'Failed to retrieve data']);
         }
 
-
-//        dd("stop");
-//        dd($this->nameAndCountry, $this->photo, $this->map, $this->info, $this->body);
-
-        if(array_count_values($this->info) < 6){
+        if(count($this->info) < 6){
             $christian = str_replace('\n'," ",$this->info[3]);
             $evangelical = $this->info[4];
         }else{
             $christian = str_replace('\n'," ",$this->info[4]);
             $evangelical = trim($this->info[5]);
         }
+
+        //correct body
+        $body = str_replace('h7',"strong",$this->body);
 
 
         $peopleGroup = [
@@ -3288,12 +3292,12 @@ class AppController extends Controller
             'religion'    => $source["religion"],
             'christian'   => $christian,
             'evangelical' => $evangelical,
-            'map'         => GoogleTranslate::trans($this->map, $translateTo, 'en'),
-            'body'        => GoogleTranslate::trans($this->body, $translateTo, 'en'),
             'window'      => $source["window"],
+            'map'         => GoogleTranslate::trans($this->map, $translateTo, 'en'),
+            'body'        => GoogleTranslate::trans($body, $translateTo, 'en'),
         ];
 
-        dd($peopleGroup);
+        return response()->json($peopleGroup);
 
     }
 }
