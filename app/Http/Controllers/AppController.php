@@ -3295,6 +3295,7 @@ class AppController extends Controller
             'window'      => $source["window"],
             'map'         => GoogleTranslate::trans($this->map, $translateTo, 'en'),
             'body'        => GoogleTranslate::trans($body, $translateTo, 'en'),
+            'link'        => $link,
         ];
 
         return response()->json($peopleGroup);
