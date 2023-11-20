@@ -7,6 +7,7 @@ use Acme\Client;
 use Illuminate\Http\Client\HttpClientException;
 use Illuminate\Http\Request;
 use Stichoza\GoogleTranslate\GoogleTranslate;
+use Symfony\Component\BrowserKit\Exception\RuntimeException;
 use Symfony\Component\BrowserKit\HttpBrowser;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\HttpKernel\HttpClientKernel;
@@ -3222,17 +3223,10 @@ class AppController extends Controller
     public $info=[];
     public String $body;
 
-    public function index($translateTo, $index)
-    {
-        if(intval($index) < 0 || intval($index) >= count($this->sources)){
-            //index out of range
-            return response()->json(['message'=>'Index out of range']);
-        }elseif (!isset($translateTo)){
-            return response()->json(['message'=>'Translate to language not set']);
-        }
-
+    private function generatePeopleGroup($translateTo, $index){
         try{
             $source = $this->sources[$index];
+
             $link = "https://joshuaproject.net/people_groups/".$source["people_id"]."/".$source["region"];
 
             $browser = new HttpBrowser(HttpClient::create());
@@ -3250,10 +3244,14 @@ class AppController extends Controller
                 ->filter('.profile_image.img-responsive')
                 ->image()->getUri();
 
-            //Extract Map Source
-            $this->map = $browser->getCrawler()
-                ->filter('.profile_map.img-responsive')
-                ->image()->getUri();
+            if($this->map = $browser->getCrawler()->filter('.profile_map.img-responsive')->count() > 0){
+                //Extract Map Source
+                $this->map = $browser->getCrawler()
+                    ->filter('.profile_map.img-responsive')
+                    ->image()->getUri();
+            }else{
+                $this->map = "";
+            }
 
             //Extract info
             $browser->getCrawler()
@@ -3282,9 +3280,11 @@ class AppController extends Controller
         //correct body
         $body = str_replace('h7',"strong",$this->body);
 
-
-        $peopleGroup = [
-            'photo'       => GoogleTranslate::trans($this->photo, $translateTo, 'en'),
+        return [
+            'photo'       => $this->photo,
+//            'index'       => $index,
+//            'name'        => $this->nameAndCountry[0],
+//            'country'     => $this->nameAndCountry[1],
             'name'        => GoogleTranslate::trans($this->nameAndCountry[0], $translateTo, 'en'),
             'country'     => GoogleTranslate::trans($this->nameAndCountry[1], $translateTo, 'en'),
             'population'  => $this->info[0],
@@ -3293,12 +3293,78 @@ class AppController extends Controller
             'christian'   => $christian,
             'evangelical' => $evangelical,
             'window'      => $source["window"],
+            'people_id'   => $source["people_id"],
             'map'         => GoogleTranslate::trans($this->map, $translateTo, 'en'),
             'body'        => GoogleTranslate::trans($body, $translateTo, 'en'),
             'link'        => $link,
         ];
 
-        return response()->json($peopleGroup);
+    }
+    public function show($translateTo, $index)
+    {
+        if(intval($index) < 0 || intval($index) >= count($this->sources)){
+            //index out of range
+            return response()->json(['message'=>'Index out of range'],404);
+        }elseif (!isset($translateTo)){
+            return response()->json(['message'=>'Translate to language not set'],400);
+        }
 
+        return response()->json($this->generatePeopleGroup($translateTo, $index));
+
+    }
+
+    public function showById($translateTo, $people_id)
+    {
+        $index = 0;
+        $check = false;
+
+        while($index < count($this->sources)){
+            if($this->sources[$index]["people_id"] == $people_id) {
+                $check = true;
+                break;
+            }
+            $index++;
+        }
+
+        if ($check){
+            return response()->json($this->generatePeopleGroup($translateTo, $index));
+        }else{
+            return response()->json(['message'=>'People Id could not be matched'],404);
+        }
+    }
+
+    public function index($translateTo)
+    {
+        $index = 0;
+        $list = [];
+
+        while($index < count($this->sources)){
+            $list[] = $this->generatePeopleGroup($translateTo, $index);
+            $index++;
+        }
+        return response()->json($list);
+    }
+
+    public function append(Request $request)
+    {
+        $arr = [];
+        $index = 0;
+        while ($index < count($this->sources)){
+            $arr[]=[
+                "photo"=> $request->images[$index]["photo"],
+                "name"=> $this->sources[$index]["name"],
+                "country"=> $this->sources[$index]["country"],
+                "language"=> $this->sources[$index]["language"],
+                "religion"=> $this->sources[$index]["religion"],
+                "population"=> $this->sources[$index]["population"],
+                "christian"=> $this->sources[$index]["christian"],
+                "window"=> $this->sources[$index]["window"],
+                "region"=> $this->sources[$index]["region"],
+                "people_id"=> $this->sources[$index]["people_id"],
+            ];
+//            dd($arr);
+            $index++;
+        }
+        return response()->json($arr);
     }
 }

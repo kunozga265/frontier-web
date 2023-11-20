@@ -19,4 +19,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::get('/get/{translateTo}/{index}', [AppController::class,'index']);
+Route::get('/get/{translateTo}/{index}', [AppController::class,'show']);
+Route::get('/get-by-id/{translateTo}/{people_id}', [AppController::class,'showById']);
+Route::get('/all/{translateTo}', [AppController::class,'index']);
+Route::post('/append', [AppController::class,'append']);
