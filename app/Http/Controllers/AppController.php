@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 
 use Acme\Client;
+use App\Mail\FeedbackMail;
 use Illuminate\Http\Client\HttpClientException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Stichoza\GoogleTranslate\GoogleTranslate;
 use Symfony\Component\BrowserKit\Exception\RuntimeException;
 use Symfony\Component\BrowserKit\HttpBrowser;
@@ -3366,5 +3368,26 @@ class AppController extends Controller
             $index++;
         }
         return response()->json($arr);
+    }
+
+    public function sendFeedback(Request $request)
+    {
+        $request->validate([
+            'name'      => 'required',
+            'email'     => 'required',
+            'subject'   => 'required',
+            'message'   => 'required'
+        ]);
+
+        try{
+            Mail::to("kunozgamlowoka@gmail.com")->send(new FeedbackMail($request->name,$request->subject,$request->message,$request->email));
+            return response()->json(["message"=>"Successfully sent"]);
+        }catch(\Symfony\Component\Mailer\Exception\RuntimeException $exception){
+            return response()->json(["message"=>$exception],400);
+
+        }
+
+
+
     }
 }
