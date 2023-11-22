@@ -7,6 +7,7 @@ use Acme\Client;
 use App\Mail\FeedbackMail;
 use Illuminate\Http\Client\HttpClientException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Stichoza\GoogleTranslate\GoogleTranslate;
 use Symfony\Component\BrowserKit\Exception\RuntimeException;
@@ -3341,9 +3342,11 @@ class AppController extends Controller
         $list = [];
 
         while($index < count($this->sources)){
-            $list[] = $this->generatePeopleGroup($translateTo, $index);
+//            $list[] = $this->generatePeopleGroup($translateTo, $index);
+
             $index++;
         }
+        Log::info("Hello World");
         return response()->json($list);
     }
 
