@@ -24,3 +24,4 @@ Route::get('/get-by-id/{translateTo}/{people_id}', [AppController::class,'showBy
 Route::get('/all/{translateTo}', [AppController::class,'index']);
 Route::post('/append', [AppController::class,'append']);
 Route::post('/feedback', [AppController::class,'sendFeedback']);
+Route::get('/send', [AppController::class,'sendNotification']);

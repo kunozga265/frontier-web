@@ -3,8 +3,9 @@
 namespace App\Http\Controllers;
 
 
-use Acme\Client;
+//use Acme\Client;
 use App\Mail\FeedbackMail;
+use Carbon\Carbon;
 use Illuminate\Http\Client\HttpClientException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -13,6 +14,7 @@ use Stichoza\GoogleTranslate\GoogleTranslate;
 use Symfony\Component\BrowserKit\Exception\RuntimeException;
 use Symfony\Component\BrowserKit\HttpBrowser;
 use Symfony\Component\HttpClient\HttpClient;
+use GuzzleHttp\Client;
 use Symfony\Component\HttpKernel\HttpClientKernel;
 
 class AppController extends Controller
@@ -3389,8 +3391,50 @@ class AppController extends Controller
             return response()->json(["message"=>$exception],400);
 
         }
+    }
 
+    public function sendNotification()
+    {
+        $now = Carbon::today("Africa/Blantyre");
+        $baseDate = Carbon::createFromDate(2023,1,1,"Africa/Blantyre");
+        $diff = $now->diffInDays($baseDate) + 1;
+        $number_people_groups = 291;
+        $index=$diff % $number_people_groups;
+        $people_group = $this->sources[$index];
+        $message = "Pray for ".$people_group["name"]." ".$people_group["country"];
+        $this->pushNotification("Pray Today", $message);
 
+    }
 
+    public function pushNotification($subject,$message){
+        //notification
+        try{
+            $client=new Client();
+//            $to=str_replace(' ','',$title);
+            $to='general';
+            $notificationRequest=$client->request('POST','https://fcm.googleapis.com/fcm/send',[
+                'headers'=>[
+                    'Authorization' => 'key=AAAA2NSA6Vg:APA91bFXxniwdFA5wftq1SoI1epJLRc-skOflkWbyvz8sDU31YkkqQ99KDNVBVm0x85SEzvtcaspifWArOf4DTYUyZU3BrGou-v-tILg40hP9fyQmb_iJsZ4lQXJFld2mfGoyoNJ_zIg',
+                    'Content-Type'   =>  'application/json',
+                ],
+                'json'=>[
+                    "priority"=>"high",
+                    "content_available"=>true,
+                    "to"=>"/topics/$to",
+                    "notification"=>[
+                        "title"=>$subject,
+                        "body"=>$message
+                    ]
+                ]
+            ]);
+
+            // Develop a use for this
+//            if ($notificationRequest->getStatusCode()==200){}
+
+            Log::info("Push Notification: ". $notificationRequest->getStatusCode());
+        }catch (\GuzzleHttp\Exception\GuzzleException $e){
+            //Log information
+            Log::info("Push Notification: ". $e);
+        }
     }
 }
